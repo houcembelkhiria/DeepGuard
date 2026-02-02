@@ -15,6 +15,15 @@ from supabase import create_client, Client
 
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
+# Device Selection (CPU by default, CUDA 0 if specified)
+DEVICE = os.environ.get("DEVICE", "cpu")
+if DEVICE == "cpu":
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    print("Running on CPU")
+else:
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    print("Running on GPU (CUDA 0)")
+
 app = FastAPI(title="DeepFake Detection API")
 handler = Mangum(app)
 
