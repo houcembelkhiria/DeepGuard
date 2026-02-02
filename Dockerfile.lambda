@@ -1,0 +1,35 @@
+# Stage 1: Build Frontend
+FROM node:18 as frontend-builder
+
+WORKDIR /app
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ .
+# You can pass build args here if needed, but we rely on runtime env vars mostly where possible,
+# or explicit build-args. For Vite, vars must be present at build time to be baked in.
+# IMPORTANT: If VITE_SUPABASE_URL and KEY are needed at build time, they must be ARGs.
+# For now, we assume they might be baked in or handled via a runtime config approach (harder with static files).
+# We'll just run build. The user might need to rebuild with --build-arg if values change.
+RUN npm run build
+
+# Stage 2: Lambda Runtime
+FROM public.ecr.aws/lambda/python:3.10
+
+# Install system dependencies for TensorFlow/OpenCV (glib, etc)
+RUN yum install -y mesa-libGL glib2
+
+# Copy requirements
+COPY backend/requirements.txt ${LAMBDA_TASK_ROOT}
+
+# Install Python packages
+# --no-cache-dir to save space.
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy Backend Code
+COPY backend/ ${LAMBDA_TASK_ROOT}
+
+# Copy Built Frontend to 'static' folder in backend
+COPY --from=frontend-builder /app/dist ${LAMBDA_TASK_ROOT}/static
+
+# Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
+CMD [ "app.handler" ]
