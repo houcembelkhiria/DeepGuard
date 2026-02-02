@@ -4,14 +4,11 @@ FROM python:3.10-slim
 # Set working directory in container
 WORKDIR /app
 
-# Install system dependencies required by OpenCV, TensorFlow, and other packages
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
     libgomp1 \
     git \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file
 COPY requirements.txt .
